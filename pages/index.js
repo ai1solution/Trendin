@@ -194,12 +194,12 @@ export default function Home() {
         return;
       }
 
-      const body = { keywords: keywords.trim() };
+      const params = new URLSearchParams({ keywords: keywords.trim() });
+      const url = `${WEBHOOK_URL}?${params}`;
 
-      const res = await fetch(WEBHOOK_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify(body),
+      const res = await fetch(url, {
+        method: 'GET',
+        headers: { 'Accept': 'application/json' },
       });
 
       if (!res.ok) {
