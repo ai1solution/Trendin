@@ -1,6 +1,7 @@
 import { Copy, Check, Linkedin, Pen } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import React from 'react';
+import { trackEvent } from '../../lib/posthog';
 
 export const PostEditor = () => {
     const { selectedDraft, updatePostContent } = useAppStore();
@@ -19,6 +20,15 @@ export const PostEditor = () => {
     // LinkedIn button - copy and show confirmation
     const handleLinkedinCopy = () => {
         if (selectedDraft) {
+            // Track copy to LinkedIn
+            trackEvent({
+                name: 'copy_to_linkedin_clicked',
+                properties: {
+                    post_length: selectedDraft.content.length,
+                    has_hashtags: selectedDraft.hashtags.length > 0
+                }
+            });
+
             navigator.clipboard.writeText(selectedDraft.content);
             setLinkedinCopied(true);
             setTimeout(() => setLinkedinCopied(false), 2000);

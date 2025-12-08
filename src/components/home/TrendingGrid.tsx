@@ -4,6 +4,7 @@ import { TrendingUp, Zap, LineChart, BarChart3, X, ExternalLink } from 'lucide-r
 import { useAppStore } from '../../store/useAppStore';
 import { api, type TrendingTopic } from '../../lib/api';
 import { BackgroundTexture } from '../layout/BackgroundTexture';
+import { trackEvent } from '../../lib/posthog';
 
 const POPULAR_NICHES = [
     'Technology',
@@ -84,11 +85,27 @@ export const TrendingGrid = () => {
     const handleNicheSelect = (niche: string) => {
         setSelectedNiche(niche);
         setCustomNiche(''); // Clear custom when selecting predefined
+
+        // Track niche selection
+        trackEvent({
+            name: 'niche_filter_selected',
+            properties: { niche, is_custom: false }
+        });
     };
 
     const handleClearFilter = () => {
         setSelectedNiche('');
         setCustomNiche('');
+    };
+
+    const handleCustomNicheApply = () => {
+        if (customNiche.trim()) {
+            trackEvent({
+                name: 'custom_niche_entered',
+                properties: { niche: customNiche }
+            });
+            fetchTrends(customNiche);
+        }
     };
 
     const activeFilter = customNiche || selectedNiche;
@@ -154,8 +171,8 @@ export const TrendingGrid = () => {
                                     key={niche}
                                     onClick={() => handleNicheSelect(niche)}
                                     className={`px-3 py-1.5 text-xs font-bold rounded-full transition-all ${selectedNiche === niche
-                                            ? 'bg-gradient-linkedin text-white shadow-md'
-                                            : 'bg-white text-gray-700 border border-gray-200 hover:border-linkedin-300 hover:text-linkedin-600'
+                                        ? 'bg-gradient-linkedin text-white shadow-md'
+                                        : 'bg-white text-gray-700 border border-gray-200 hover:border-linkedin-300 hover:text-linkedin-600'
                                         }`}
                                 >
                                     {niche}
@@ -184,7 +201,7 @@ export const TrendingGrid = () => {
                                 />
                                 {customNiche && (
                                     <button
-                                        onClick={() => fetchTrends(customNiche)}
+                                        onClick={handleCustomNicheApply}
                                         className="px-4 py-2 text-sm font-bold text-white bg-gradient-linkedin rounded-lg hover:shadow-lg transition-all"
                                     >
                                         Apply
@@ -251,7 +268,18 @@ export const TrendingGrid = () => {
                                 )}
 
                                 <button
-                                    onClick={() => generateDrafts(topic.title)}
+                                    onClick={() => {
+                                        // Track trending topic click
+                                        trackEvent({
+                                            name: 'trending_topic_clicked',
+                                            properties: {
+                                                topic_title: topic.title,
+                                                topic_difficulty: topic.difficulty,
+                                                niche: activeFilter
+                                            }
+                                        });
+                                        generateDrafts(topic.title);
+                                    }}
                                     className="text-left flex-1"
                                 >
                                     <h3 className="mb-2 text-sm font-bold leading-tight text-linkedin-text line-clamp-2 group-hover:text-linkedin-600 transition-colors">

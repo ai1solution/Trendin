@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { api, type PostDraft } from '../lib/api';
+import { trackEvent } from '../lib/posthog';
 
 export type AppMode = 'landing' | 'trending' | 'generating' | 'selection' | 'editor';
 
@@ -44,15 +45,34 @@ export const useAppStore = create<AppState>((set, get) => ({
         set({ isGenerating: true, mode: 'generating', topic });
         try {
             const drafts = await api.generateDrafts(topic);
+
+            // Track draft generation
+            trackEvent({
+                name: 'drafts_generated',
+                properties: {
+                    topic,
+                    draft_count: drafts.length,
+                    generation_source: 'trending'
+                }
+            });
+
             set({ drafts, isGenerating: false, mode: 'selection' });
         } catch (error) {
             console.error("Failed to generate drafts", error);
             set({ isGenerating: false });
-            // Ideally handle error state here
         }
     },
 
     selectDraft: (draft) => {
+        // Track draft selection
+        trackEvent({
+            name: 'draft_selected',
+            properties: {
+                draft_title: draft.title,
+                draft_index: get().drafts.indexOf(draft)
+            }
+        });
+
         set({
             selectedDraft: draft,
             mode: 'editor',
@@ -61,6 +81,14 @@ export const useAppStore = create<AppState>((set, get) => ({
     },
 
     setCustomDraft: (content) => {
+        // Track custom draft creation
+        trackEvent({
+            name: 'custom_draft_created',
+            properties: {
+                has_content: content.trim().length > 0
+            }
+        });
+
         set({
             selectedDraft: {
                 id: 'custom',
@@ -83,6 +111,15 @@ export const useAppStore = create<AppState>((set, get) => ({
     sendChatMessage: async (message) => {
         const { chatMessages, selectedDraft } = get();
         if (!selectedDraft) return;
+
+        // Track AI refinement request
+        trackEvent({
+            name: 'ai_refinement_requested',
+            properties: {
+                instruction: message.substring(0, 100), // First 100 chars
+                current_post_length: selectedDraft.content.length
+            }
+        });
 
         // Add user message
         const newMessages = [...chatMessages, { role: 'user', content: message } as ChatMessage];

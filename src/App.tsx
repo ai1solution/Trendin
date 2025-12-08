@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Header } from './components/layout/Header';
 import { Hero } from './components/home/Hero';
 import { TrendingGrid } from './components/home/TrendingGrid';
@@ -6,12 +7,18 @@ import { EditorWorkspace } from './components/editor/EditorWorkspace';
 import { Footer } from './components/layout/Footer';
 import { useAppStore } from './store/useAppStore';
 import { AnimatePresence, motion } from 'framer-motion';
+import { initPostHog } from './lib/posthog';
 
 import { StepIndicator } from './components/layout/StepIndicator';
 import { FloatingBackground } from './components/layout/FloatingBackground';
 
 function App() {
   const mode = useAppStore((state) => state.mode);
+
+  // Initialize PostHog on app mount
+  useEffect(() => {
+    initPostHog();
+  }, []);
 
   return (
     <div className="min-h-screen bg-white text-linkedin-text font-sans selection:bg-linkedin-100 selection:text-linkedin-900 relative overflow-hidden">

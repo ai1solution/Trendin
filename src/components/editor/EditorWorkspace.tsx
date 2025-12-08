@@ -5,6 +5,7 @@ import { MessageSquare, Edit3, ArrowLeft, Code2, Pen } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { motion } from 'framer-motion';
 import { BackgroundTexture } from '../layout/BackgroundTexture';
+import { trackEvent } from '../../lib/posthog';
 
 export const EditorWorkspace = () => {
     const { setMode } = useAppStore();
@@ -61,7 +62,13 @@ export const EditorWorkspace = () => {
             <div className="relative z-10">
                 {/* Back Button with Premium Style */}
                 <button
-                    onClick={() => setMode('selection')}
+                    onClick={() => {
+                        trackEvent({
+                            name: 'back_to_drafts_clicked',
+                            properties: {}
+                        });
+                        setMode('selection');
+                    }}
                     className="flex items-center gap-2 mb-4 px-3 py-2 text-sm font-medium text-gray-600 hover:text-linkedin-600 bg-white/80 backdrop-blur-sm border border-gray-100 rounded-lg hover:border-linkedin-200 hover:shadow-soft transition-all"
                 >
                     <ArrowLeft className="w-4 h-4" />

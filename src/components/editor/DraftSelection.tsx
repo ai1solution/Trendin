@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { RefreshCw, Linkedin, Zap, TrendingUp, Wand2, Bot, Sparkles } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { BackgroundTexture } from '../layout/BackgroundTexture';
+import { trackEvent } from '../../lib/posthog';
 
 export const DraftSelection = () => {
     const { drafts, selectDraft, isGenerating, setMode } = useAppStore();
@@ -148,6 +149,10 @@ export const DraftSelection = () => {
                     </div>
                     <button
                         onClick={() => {
+                            trackEvent({
+                                name: 'try_again_clicked',
+                                properties: {}
+                            });
                             setMode('landing');
                             setTimeout(() => {
                                 document.getElementById('trending-section')?.scrollIntoView({ behavior: 'smooth' });
