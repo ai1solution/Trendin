@@ -10,13 +10,13 @@ export interface TrendingTopic {
     title: string;
     posts: string;
     difficulty: 'Low' | 'Med' | 'High';
-    link?: string; // URL to source article
+    link?: string;
 }
 
 const N8N_GENERATE_URL = 'https://aionesolution-n8n.hf.space/webhook/linkedin-content-automation';
 const N8N_REFINE_URL = 'https://aionesolution-n8n.hf.space/webhook/linkedin-content-automation-interact';
 
-// Enhanced mock data for fallback
+// Mock data for trending topics
 const getMockDataForNiche = (niche?: string): TrendingTopic[] => {
     const baseTopics = [
         { id: '1', title: 'The Future of Remote Work in 2025', posts: 'via Forbes', difficulty: 'Med' as const, link: 'https://www.forbes.com' },
@@ -41,7 +41,6 @@ const getMockDataForNiche = (niche?: string): TrendingTopic[] => {
         { id: '20', title: 'Educational Technology Innovations', posts: 'via EdSurge', difficulty: 'Low' as const, link: 'https://www.edsurge.com' },
     ];
 
-    // If niche provided, customize titles slightly
     if (niche) {
         return baseTopics.map(topic => ({
             ...topic,
@@ -53,18 +52,12 @@ const getMockDataForNiche = (niche?: string): TrendingTopic[] => {
 };
 
 export const api = {
-    // Fetch trending topics via Python backend (proxies SERP API)
+    // Fetch trending topics via n8n webhook
     getTrends: async (niche?: string): Promise<TrendingTopic[]> => {
         try {
-            // Try to use Python backend API
-            const apiUrl = import.meta.env.VITE_API_URL;
+            const n8nUrl = 'https://aionesolution-n8n.hf.space/webhook/trendin-trends';
+            const url = new URL(n8nUrl);
 
-            if (!apiUrl) {
-                console.warn("VITE_API_URL not configured. Using mock data.");
-                return getMockDataForNiche(niche);
-            }
-
-            const url = new URL('/api/trends', apiUrl);
             if (niche) {
                 url.searchParams.append('niche', niche);
             }
@@ -72,29 +65,23 @@ export const api = {
             const response = await fetch(url.toString());
 
             if (!response.ok) {
-                throw new Error(`API returned ${response.status}`);
+                throw new Error(`N8N API returned ${response.status}`);
             }
 
             const result = await response.json();
 
-            if (!result.success) {
-                throw new Error(result.error || 'API request failed');
+            // Check if response has data
+            if (result.data && Array.isArray(result.data) && result.data.length > 0) {
+                return result.data;
             }
 
-            const data = result.data as TrendingTopic[];
-
-            if (!data || data.length === 0) {
-                console.warn("No results from backend API, using mock data");
-                return getMockDataForNiche(niche);
-            }
-
-            return data;
+            // Fallback to mock data if no results
+            console.warn("No results from n8n webhook, using mock data");
+            return getMockDataForNiche(niche);
 
         } catch (error) {
-            console.error("Failed to fetch trends from backend:", error);
-
-            // Fallback to comprehensive mock data
-            console.warn("Using mock data fallback");
+            console.error("Failed to fetch trends from n8n:", error);
+            // Fallback to mock data on error
             return getMockDataForNiche(niche);
         }
     },
@@ -120,7 +107,6 @@ export const api = {
 
             const data = await response.json();
 
-            // Check for payload.output.post_drafts
             const deepDrafts = data?.payload?.output?.post_drafts;
             if (Array.isArray(deepDrafts)) {
                 return deepDrafts.map((item: any) => ({
@@ -131,7 +117,6 @@ export const api = {
                 }));
             }
 
-            // Fallbacks for previous known structures
             if (Array.isArray(data)) {
                 return data.map((item: any) => ({
                     id: Math.random().toString(36).substr(2, 9),
@@ -178,8 +163,6 @@ export const api = {
             }
 
             const data = await response.json();
-
-            // Handle both object and stringified JSON in payload.output
             let outputData = data?.payload?.output;
 
             if (typeof outputData === 'string') {
@@ -190,12 +173,10 @@ export const api = {
                 }
             }
 
-            // Valid structure check
             if (outputData?.post_drafts && Array.isArray(outputData.post_drafts) && outputData.post_drafts.length > 0) {
                 return outputData.post_drafts[0].content;
             }
 
-            // Check if outputData itself is the string content
             if (typeof outputData === 'string') {
                 return outputData;
             }
