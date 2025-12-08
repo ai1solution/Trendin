@@ -16,55 +16,86 @@ export interface TrendingTopic {
 const N8N_GENERATE_URL = 'https://aionesolution-n8n.hf.space/webhook/linkedin-content-automation';
 const N8N_REFINE_URL = 'https://aionesolution-n8n.hf.space/webhook/linkedin-content-automation-interact';
 
-export const api = {
-    // Fetch real trending topics via Serp API (using Google News for better quality)
-    getTrends: async (niche?: string): Promise<TrendingTopic[]> => {
-        const apiKey = import.meta.env.VITE_SERP_API_KEY;
+// Enhanced mock data for fallback
+const getMockDataForNiche = (niche?: string): TrendingTopic[] => {
+    const baseTopics = [
+        { id: '1', title: 'The Future of Remote Work in 2025', posts: 'via Forbes', difficulty: 'Med' as const, link: 'https://www.forbes.com' },
+        { id: '2', title: 'AI Revolutionizing Healthcare Systems', posts: 'via TechCrunch', difficulty: 'High' as const, link: 'https://techcrunch.com' },
+        { id: '3', title: 'Sustainable Business Practices Gain Momentum', posts: 'via Bloomberg', difficulty: 'Med' as const, link: 'https://www.bloomberg.com' },
+        { id: '4', title: 'Cybersecurity Threats in Modern Enterprises', posts: 'via Wired', difficulty: 'High' as const, link: 'https://www.wired.com' },
+        { id: '5', title: 'The Rise of No-Code Development Platforms', posts: 'via VentureBeat', difficulty: 'Low' as const, link: 'https://venturebeat.com' },
+        { id: '6', title: 'Marketing Automation Trends for 2025', posts: 'via HubSpot', difficulty: 'Low' as const, link: 'https://www.hubspot.com' },
+        { id: '7', title: 'Financial Technology Breaking Traditional Banking', posts: 'via WSJ', difficulty: 'High' as const, link: 'https://www.wsj.com' },
+        { id: '8', title: 'Leadership Strategies for Hybrid Teams', posts: 'via HBR', difficulty: 'Med' as const, link: 'https://hbr.org' },
+        { id: '9', title: 'E-commerce Personalization Through AI', posts: 'via Shopify', difficulty: 'Low' as const, link: 'https://www.shopify.com' },
+        { id: '10', title: 'Data Privacy Regulations Impact on Business', posts: 'via MIT Tech Review', difficulty: 'High' as const, link: 'https://www.technologyreview.com' },
+        { id: '11', title: 'Cloud Computing Cost Optimization Strategies', posts: 'via AWS', difficulty: 'Med' as const, link: 'https://aws.amazon.com' },
+        { id: '12', title: 'Mental Health in the Workplace', posts: 'via Psychology Today', difficulty: 'Low' as const, link: 'https://www.psychologytoday.com' },
+        { id: '13', title: 'Blockchain Applications Beyond Cryptocurrency', posts: 'via CoinDesk', difficulty: 'High' as const, link: 'https://www.coindesk.com' },
+        { id: '14', title: 'Customer Success Metrics That Matter', posts: 'via Gainsight', difficulty: 'Low' as const, link: 'https://www.gainsight.com' },
+        { id: '15', title: 'Product Management Best Practices', posts: 'via ProductBoard', difficulty: 'Med' as const, link: 'https://www.productboard.com' },
+        { id: '16', title: 'UX Design Trends Shaping Digital Products', posts: 'via Smashing Magazine', difficulty: 'Low' as const, link: 'https://www.smashingmagazine.com' },
+        { id: '17', title: 'Sales Enablement Through Technology', posts: 'via Salesforce', difficulty: 'Med' as const, link: 'https://www.salesforce.com' },
+        { id: '18', title: 'HR Technology Transforming Recruitment', posts: 'via SHRM', difficulty: 'Med' as const, link: 'https://www.shrm.org' },
+        { id: '19', title: 'Real Estate Tech Disrupting Property Markets', posts: 'via Inman', difficulty: 'High' as const, link: 'https://www.inman.com' },
+        { id: '20', title: 'Educational Technology Innovations', posts: 'via EdSurge', difficulty: 'Low' as const, link: 'https://www.edsurge.com' },
+    ];
 
+    // If niche provided, customize titles slightly
+    if (niche) {
+        return baseTopics.map(topic => ({
+            ...topic,
+            title: `${niche}: ${topic.title}`
+        }));
+    }
+
+    return baseTopics;
+};
+
+export const api = {
+    // Fetch trending topics via Python backend (proxies SERP API)
+    getTrends: async (niche?: string): Promise<TrendingTopic[]> => {
         try {
-            if (!apiKey || apiKey.includes('placeholder')) {
-                console.warn("Serp API Key is missing or placeholder. Returning mock data.");
-                // Fallback mock data
-                return [
-                    { id: '1', title: 'Remote Work Culture', posts: 'via TechCrunch', difficulty: 'Low' },
-                    { id: '2', title: 'AI in 2025', posts: 'via Wired', difficulty: 'Med' },
-                    { id: '3', title: 'SaaS Growth', posts: 'via Forbes', difficulty: 'High' },
-                    { id: '4', title: 'Mental Health', posts: 'via NYT', difficulty: 'Low' },
-                    { id: '5', title: 'Productivity Hacks', posts: 'via LifeHacker', difficulty: 'Low' },
-                    { id: '6', title: 'Leadership Tips', posts: 'via HBR', difficulty: 'Med' },
-                ];
+            // Try to use Python backend API
+            const apiUrl = import.meta.env.VITE_API_URL;
+
+            if (!apiUrl) {
+                console.warn("VITE_API_URL not configured. Using mock data.");
+                return getMockDataForNiche(niche);
             }
 
-            const url = new URL('https://serpapi.com/search.json');
-            url.searchParams.append('engine', 'google_news');
-            // Use niche if provided, otherwise use default broad query
-            const query = niche ? `${niche} trends` : 'business technology trends';
-            url.searchParams.append('q', query);
-            url.searchParams.append('gl', 'us');
-            url.searchParams.append('hl', 'en');
-            url.searchParams.append('api_key', apiKey);
+            const url = new URL('/api/trends', apiUrl);
+            if (niche) {
+                url.searchParams.append('niche', niche);
+            }
 
             const response = await fetch(url.toString());
 
             if (!response.ok) {
-                throw new Error('Failed to fetch trends');
+                throw new Error(`API returned ${response.status}`);
             }
 
-            const data = await response.json();
-            const newsResults = data?.news_results || [];
+            const result = await response.json();
 
-            return newsResults.slice(0, 20).map((item: any, index: number) => ({
-                id: String(index + 1),
-                title: item.title || 'Trending Story',
-                posts: item.source?.name ? `via ${item.source.name}` : 'Trending',
-                difficulty: index % 3 === 0 ? 'High' : index % 3 === 1 ? 'Med' : 'Low',
-                link: item.link || '' // Store the article URL
-            }));
+            if (!result.success) {
+                throw new Error(result.error || 'API request failed');
+            }
+
+            const data = result.data as TrendingTopic[];
+
+            if (!data || data.length === 0) {
+                console.warn("No results from backend API, using mock data");
+                return getMockDataForNiche(niche);
+            }
+
+            return data;
 
         } catch (error) {
-            console.error("Failed to fetch trends:", error);
-            // Fallback to empty or static list on error to prevent UI crash
-            return [];
+            console.error("Failed to fetch trends from backend:", error);
+
+            // Fallback to comprehensive mock data
+            console.warn("Using mock data fallback");
+            return getMockDataForNiche(niche);
         }
     },
 
@@ -89,7 +120,7 @@ export const api = {
 
             const data = await response.json();
 
-            // Check for payload.output.post_drafts (The structure from user report)
+            // Check for payload.output.post_drafts
             const deepDrafts = data?.payload?.output?.post_drafts;
             if (Array.isArray(deepDrafts)) {
                 return deepDrafts.map((item: any) => ({
@@ -156,7 +187,6 @@ export const api = {
                     outputData = JSON.parse(outputData);
                 } catch (e) {
                     console.error("Failed to parse inner JSON", e);
-                    // parsing failed, maybe it's just a raw string message?
                 }
             }
 
@@ -165,7 +195,7 @@ export const api = {
                 return outputData.post_drafts[0].content;
             }
 
-            // Check if outputData itself is the string content (edge case)
+            // Check if outputData itself is the string content
             if (typeof outputData === 'string') {
                 return outputData;
             }
