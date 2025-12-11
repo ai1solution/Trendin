@@ -11,7 +11,7 @@ export const EditorWorkspace = () => {
     const [activeTab, setActiveTab] = useState<'editor' | 'chat'>('editor');
 
     return (
-        <div className="container max-w-7xl px-4 py-6 mx-auto relative min-h-screen flex flex-col">
+        <div className="container max-w-7xl px-4 py-6 mx-auto relative flex flex-col">
             {/* Enhanced Professional Background */}
             <div className="absolute inset-0 -z-10">
                 <div className="absolute inset-0 bg-[#f8f9fb]" />

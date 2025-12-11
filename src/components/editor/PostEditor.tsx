@@ -8,6 +8,7 @@ export const PostEditor = () => {
     const { selectedDraft, updatePostContent } = useAppStore();
     const [copied, setCopied] = React.useState(false);
     const [linkedinCopied, setLinkedinCopied] = React.useState(false);
+    const textareaRef = React.useRef<HTMLTextAreaElement>(null);
 
     // Copy to clipboard
     const handleCopy = () => {
@@ -16,6 +17,33 @@ export const PostEditor = () => {
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
         }
+    };
+
+    // Format text
+    const handleFormat = (type: 'hashtag') => {
+        if (!selectedDraft || !textareaRef.current) return;
+
+        const textarea = textareaRef.current;
+        const start = textarea.selectionStart;
+        const text = selectedDraft.content;
+
+        let newText = '';
+        let newCursorPos = start;
+
+        if (type === 'hashtag') {
+            const before = text.substring(0, start);
+            const after = text.substring(start);
+            newText = `${before}#${after}`;
+            newCursorPos = start + 1;
+        }
+
+        updatePostContent(newText);
+
+        // Restore cursor/selection next tick
+        setTimeout(() => {
+            textarea.focus();
+            textarea.setSelectionRange(newCursorPos, newCursorPos);
+        }, 0);
     };
 
     // LinkedIn button - copy and show confirmation
@@ -33,6 +61,12 @@ export const PostEditor = () => {
             navigator.clipboard.writeText(selectedDraft.content);
             setLinkedinCopied(true);
             setTimeout(() => setLinkedinCopied(false), 2000);
+
+            // Open LinkedIn in new tab with pre-filled text
+            // Note: LinkedIn doesn't have a perfect "create post" URL API that accepts body text reliably for personal profiles without API access,
+            // but the share URL is the closest standard method.
+            const encodedText = encodeURIComponent(selectedDraft.content);
+            window.open(`https://www.linkedin.com/feed/?shareActive=true&text=${encodedText}`, '_blank');
         }
     };
 
@@ -48,7 +82,7 @@ export const PostEditor = () => {
 
 
     return (
-        <div className="flex flex-col h-full bg-[#f8f9fb]">
+        <div className="flex flex-col bg-[#f8f9fb]">
             {/* Professional Toolbar */}
             <div className="px-6 py-3 bg-white border-b border-gray-200/60 sticky top-0 z-10 flex items-center justify-between">
                 <div className="flex items-center gap-4">
@@ -60,13 +94,11 @@ export const PostEditor = () => {
                     </div>
                     <div className="h-4 w-px bg-gray-200" />
                     <div className="flex items-center gap-1">
-                        <button className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors" title="Bold">
-                            <span className="font-bold text-xs">B</span>
-                        </button>
-                        <button className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors" title="Italic">
-                            <span className="italic font-serif text-xs">I</span>
-                        </button>
-                        <button className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors" title="Add Hashtags">
+                        <button
+                            onClick={() => handleFormat('hashtag')}
+                            className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+                            title="Add Hashtag"
+                        >
                             <Hash className="w-3.5 h-3.5" />
                         </button>
                     </div>
@@ -89,6 +121,7 @@ export const PostEditor = () => {
             <div className="flex-1 overflow-y-auto custom-scrollbar p-6 lg:p-8">
                 <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-sm border border-gray-100 min-h-[500px] flex flex-col relative group transition-shadow duration-300 hover:shadow-md">
                     <textarea
+                        ref={textareaRef}
                         value={selectedDraft.content}
                         onChange={(e) => updatePostContent(e.target.value)}
                         className="flex-1 w-full p-8 text-lg leading-relaxed resize-none outline-none text-gray-800 font-sans placeholder:text-gray-300 bg-transparent"
@@ -125,7 +158,7 @@ export const PostEditor = () => {
                         {linkedinCopied ? (
                             <>
                                 <Check className="w-4 h-4" />
-                                Copied!
+                                Redirecting...
                             </>
                         ) : (
                             <>

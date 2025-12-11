@@ -1,6 +1,6 @@
 import React, { useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { TrendingUp, Zap, LineChart, BarChart3, X, ExternalLink } from 'lucide-react';
+import { TrendingUp, Zap, LineChart, BarChart3, X, ExternalLink, ArrowRight, Sparkles } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { api, type TrendingTopic } from '../../lib/api';
 import { BackgroundTexture } from '../layout/BackgroundTexture';
@@ -156,7 +156,7 @@ export const TrendingGrid = () => {
                         Browse Trending Topics
                     </h2>
                     <p className="max-w-2xl mx-auto text-base font-medium text-gray-600">
-                        Explore trending topics and pick one to generate viral-ready posts
+                        Select any topic below to instantly <span className="text-linkedin-600 font-bold">generate viral-ready posts</span> for your audience.
                     </p>
                 </div>
 
@@ -253,12 +253,24 @@ export const TrendingGrid = () => {
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: idx * 0.02 }}
-                                className="card-interactive p-4 text-left group bg-white hover:bg-white flex flex-col"
+                                onClick={() => {
+                                    // Track trending topic click
+                                    trackEvent({
+                                        name: 'trending_topic_clicked',
+                                        properties: {
+                                            topic_title: topic.title,
+                                            topic_difficulty: topic.difficulty,
+                                            niche: activeFilter
+                                        }
+                                    });
+                                    generateDrafts(topic.title);
+                                }}
+                                className="card-interactive p-4 text-left group bg-white hover:bg-white flex flex-col relative cursor-pointer ring-1 ring-gray-100 hover:ring-linkedin-300 transition-all hover:shadow-lg hover:-translate-y-1 rounded-xl"
                             >
                                 {/* Animated "Hot" Badge */}
                                 {idx < 3 && (
                                     <motion.div
-                                        className="inline-flex items-center gap-1 px-2 py-0.5 mb-2 text-[10px] font-bold text-white uppercase rounded bg-gradient-to-r from-energy-500 to-energy-600 self-start"
+                                        className="inline-flex items-center gap-1 px-2 py-0.5 mb-2 text-[10px] font-bold text-white uppercase rounded bg-gradient-to-r from-energy-500 to-energy-600 self-start shadow-sm"
                                         animate={{ scale: [1, 1.05, 1] }}
                                         transition={{ duration: 2, repeat: Infinity }}
                                     >
@@ -267,35 +279,31 @@ export const TrendingGrid = () => {
                                     </motion.div>
                                 )}
 
-                                <button
-                                    onClick={() => {
-                                        // Track trending topic click
-                                        trackEvent({
-                                            name: 'trending_topic_clicked',
-                                            properties: {
-                                                topic_title: topic.title,
-                                                topic_difficulty: topic.difficulty,
-                                                niche: activeFilter
-                                            }
-                                        });
-                                        generateDrafts(topic.title);
-                                    }}
-                                    className="text-left flex-1"
-                                >
-                                    <h3 className="mb-2 text-sm font-bold leading-tight text-linkedin-text line-clamp-2 group-hover:text-linkedin-600 transition-colors">
+                                {/* Hover Prompt Overlay */}
+                                <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0">
+                                    <div className="flex items-center gap-1 text-xs font-bold text-linkedin-600 bg-linkedin-50 px-2 py-1 rounded-full shadow-sm">
+                                        <Sparkles className="w-3 h-3" />
+                                        Generate
+                                        <ArrowRight className="w-3 h-3" />
+                                    </div>
+                                </div>
+
+                                <div className="text-left flex-1 mt-1">
+                                    <h3 className="mb-2 text-sm font-bold leading-tight text-linkedin-text line-clamp-3 group-hover:text-linkedin-700 transition-colors">
                                         {topic.title}
                                     </h3>
-                                </button>
+                                </div>
 
-                                <div className="flex items-center justify-between mt-3">
+                                <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-50">
                                     {/* Clickable Source Link */}
                                     {topic.link ? (
                                         <a
                                             href={topic.link}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className="text-xs font-semibold text-gray-500 hover:text-linkedin-600 transition-colors flex items-center gap-1"
+                                            className="text-xs font-semibold text-gray-500 hover:text-linkedin-600 transition-colors flex items-center gap-1 z-10"
                                             onClick={(e) => e.stopPropagation()}
+                                            title="View Source"
                                         >
                                             {topic.posts}
                                             <ExternalLink className="w-3 h-3" />
