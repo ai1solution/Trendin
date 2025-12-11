@@ -1,7 +1,8 @@
-import { Copy, Check, Linkedin, Pen } from 'lucide-react';
+import { Copy, Check, Linkedin, Pen, Hash, Type } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import React from 'react';
 import { trackEvent } from '../../lib/posthog';
+import { cn } from '../../lib/utils'; // Ensure cn is available
 
 export const PostEditor = () => {
     const { selectedDraft, updatePostContent } = useAppStore();
@@ -35,63 +36,91 @@ export const PostEditor = () => {
         }
     };
 
-    if (!selectedDraft) return null;
+    if (!selectedDraft) return (
+        <div className="flex items-center justify-center h-full bg-gray-50/50">
+            <div className="text-center text-gray-400">
+                <p>Select a draft to start editing</p>
+            </div>
+        </div>
+    );
 
     const charCount = selectedDraft.content.length;
-    const isOptimalLength = charCount >= 100 && charCount <= 300;
+
 
     return (
-        <div className="flex flex-col h-full bg-white">
-            {/* Toolbar */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-                <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-linkedin-50">
-                        <Pen className="w-4 h-4 text-linkedin-600" />
+        <div className="flex flex-col h-full bg-[#f8f9fb]">
+            {/* Professional Toolbar */}
+            <div className="px-6 py-3 bg-white border-b border-gray-200/60 sticky top-0 z-10 flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                        <div className="p-1.5 bg-blue-50 rounded-lg">
+                            <Pen className="w-4 h-4 text-blue-600" />
+                        </div>
+                        <span className="text-sm font-bold text-gray-700">Editor</span>
                     </div>
-                    <div>
-                        <h3 className="text-sm font-bold font-display text-linkedin-text">Post Editor</h3>
-                        <p className="text-xs font-medium text-gray-500">Refine and perfect your content</p>
+                    <div className="h-4 w-px bg-gray-200" />
+                    <div className="flex items-center gap-1">
+                        <button className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors" title="Bold">
+                            <span className="font-bold text-xs">B</span>
+                        </button>
+                        <button className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors" title="Italic">
+                            <span className="italic font-serif text-xs">I</span>
+                        </button>
+                        <button className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors" title="Add Hashtags">
+                            <Hash className="w-3.5 h-3.5" />
+                        </button>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
+                    <span className="text-xs font-medium text-gray-400 px-2 transition-opacity duration-300 opacity-60">
+                        Autosaved
+                    </span>
                     <button
                         onClick={handleCopy}
-                        className="p-2.5 text-gray-500 transition-all rounded-xl hover:bg-linkedin-50 hover:text-linkedin-600 active:scale-95"
-                        title="Copy to clipboard"
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:border-gray-300 hover:text-gray-900 transition-all active:scale-95 shadow-sm"
                     >
-                        {copied ? <Check className="w-4 h-4 text-success-600" /> : <Copy className="w-4 h-4" />}
+                        {copied ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
+                        {copied ? 'Copied' : 'Copy'}
                     </button>
                 </div>
             </div>
 
-            {/* Editor Area */}
-            <div className="flex-1 p-8 overflow-y-auto custom-scrollbar bg-gray-50/50">
-                <textarea
-                    value={selectedDraft.content}
-                    onChange={(e) => updatePostContent(e.target.value)}
-                    className="w-full h-full text-base leading-loose resize-none outline-none text-linkedin-text bg-transparent font-sans placeholder:text-gray-300 selection:bg-linkedin-100"
-                    placeholder="Start writing your LinkedIn post..."
-                    spellCheck={false}
-                />
+            {/* Editor Surface */}
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-6 lg:p-8">
+                <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-sm border border-gray-100 min-h-[500px] flex flex-col relative group transition-shadow duration-300 hover:shadow-md">
+                    <textarea
+                        value={selectedDraft.content}
+                        onChange={(e) => updatePostContent(e.target.value)}
+                        className="flex-1 w-full p-8 text-lg leading-relaxed resize-none outline-none text-gray-800 font-sans placeholder:text-gray-300 bg-transparent"
+                        placeholder="Start writing your viral post..."
+                        spellCheck={false}
+                    />
+
+                    {/* Bottom fade for extensive scrolling hints if needed, or just cleaner styling */}
+                </div>
+                <p className="text-center text-xs text-gray-400 mt-4">Pro tip: Use short paragraphs for better readability on mobile.</p>
             </div>
 
-            {/* Footer Actions */}
-            <div className="px-6 py-4 border-t border-gray-100 bg-white">
+            {/* Footer Status Bar */}
+            <div className="px-6 py-3 bg-white border-t border-gray-200/60">
                 <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className={`w-2.5 h-2.5 rounded-full ${isOptimalLength ? 'bg-success-500' : charCount > 300 ? 'bg-energy-500' : 'bg-gray-400'}`} />
-                        <span className="text-xs font-semibold text-gray-600">
-                            {charCount} characters
-                        </span>
-                        {isOptimalLength && (
-                            <span className="px-2 py-0.5 text-[10px] font-bold text-success-700 uppercase bg-success-50 rounded border border-success-100">
-                                Optimal
-                            </span>
-                        )}
+                    <div className="flex items-center gap-4 text-xs font-medium text-gray-500">
+                        <div className="flex items-center gap-2" title="Character Count">
+                            <div className={cn(
+                                "w-2 h-2 rounded-full",
+                                charCount > 3000 ? "bg-red-500" : charCount > 1500 ? "bg-amber-500" : "bg-green-500"
+                            )} />
+                            <span>{charCount} / 3000 chars</span>
+                        </div>
+                        <div className="flex items-center gap-2 border-l border-gray-200 pl-4">
+                            <Type className="w-3.5 h-3.5" />
+                            <span>{selectedDraft.content.split(/\s+/).filter(w => w.length > 0).length} words</span>
+                        </div>
                     </div>
+
                     <button
                         onClick={handleLinkedinCopy}
-                        className="flex items-center gap-2 px-5 py-2.5 text-sm font-bold text-white transition-all shadow-lg rounded-xl bg-gradient-linkedin hover:shadow-xl hover:shadow-linkedin-500/25 active:scale-95 group"
+                        className="flex items-center gap-2 px-6 py-2.5 text-sm font-bold text-white transition-all shadow-lg rounded-xl bg-[#0a66c2] hover:bg-[#004182] hover:shadow-xl hover:shadow-blue-500/20 active:scale-95 group"
                     >
                         {linkedinCopied ? (
                             <>

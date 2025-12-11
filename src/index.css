@@ -172,3 +172,33 @@
     @apply bg-gradient-mesh;
   }
 }
+
+@layer components {
+  .markdown-prose p {
+    @apply mb-2 leading-relaxed text-gray-700;
+  }
+
+  .markdown-prose strong {
+    @apply font-semibold text-gray-900;
+  }
+
+  .markdown-prose ul {
+    @apply list-disc list-outside ml-4 mb-2 space-y-1;
+  }
+
+  .markdown-prose ol {
+    @apply list-decimal list-outside ml-4 mb-2 space-y-1;
+  }
+
+  .markdown-prose code {
+    @apply px-1.5 py-0.5 rounded bg-gray-100 text-pink-500 font-mono text-xs;
+  }
+
+  .markdown-prose pre {
+    @apply p-3 my-2 bg-gray-900 rounded-lg overflow-x-auto text-gray-100 font-mono text-xs;
+  }
+
+  .markdown-prose blockquote {
+    @apply border-l-2 border-gray-300 pl-4 py-1 my-2 text-gray-500 italic;
+  }
+}
