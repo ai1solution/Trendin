@@ -114,6 +114,7 @@ export const captureInitialVisit = () => {
             // Set user properties (these persist across sessions)
             posthog.register({
                 ...browserInfo,
+                ...sourceInfo,
             });
 
             // Track the initial visit event with source information
@@ -122,10 +123,23 @@ export const captureInitialVisit = () => {
                 visit_timestamp: new Date().toISOString(),
             });
 
-            // Also set person properties (useful for user segmentation)
+            // Set person properties (updates on every visit)
             posthog.people?.set({
-                first_visit: new Date().toISOString(),
+                last_visit: new Date().toISOString(),
                 ...browserInfo,
+                ...sourceInfo,
+            });
+
+            // Set initial person properties (only set if not already set)
+            posthog.people?.set_once({
+                first_visit: new Date().toISOString(),
+                initial_landing_page: sourceInfo.landing_page,
+                initial_referrer: sourceInfo.referrer,
+                initial_utm_source: sourceInfo.utm_source,
+                initial_utm_medium: sourceInfo.utm_medium,
+                initial_utm_campaign: sourceInfo.utm_campaign,
+                initial_utm_content: sourceInfo.utm_content,
+                initial_utm_term: sourceInfo.utm_term,
             });
 
             if (import.meta.env.DEV) {
