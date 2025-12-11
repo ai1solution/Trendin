@@ -5,40 +5,100 @@ export interface PostDraft {
     hashtags: string[];
 }
 
+export interface ChatMessage {
+    role: 'user' | 'assistant';
+    content: string;
+}
+
+export interface UpdatePostResponse {
+    content: string;
+    summary_message?: string;
+}
+
+export interface Analysis {
+    consensus: string;
+    gap: string;
+}
+
+export interface GenerateResponse {
+    drafts: PostDraft[];
+    analysis?: Analysis;
+}
+
 export interface TrendingTopic {
     id: string;
     title: string;
-    posts: string;
-    difficulty: 'Low' | 'Med' | 'High';
+    snippet?: string;
+    source_name?: string;
     link?: string;
+    published_date?: string;
+    thumbnail_url?: string;
+    // Computed/Mocked fields for UI
+    volume?: string;
+    difficulty?: 'Low' | 'Med' | 'High';
 }
 
-const N8N_GENERATE_URL = 'https://aionesolution-n8n.hf.space/webhook/linkedin-content-automation';
-const N8N_REFINE_URL = 'https://aionesolution-n8n.hf.space/webhook/linkedin-content-automation-interact';
+const N8N_GENERATE_URL = 'https://aionesolution-n8n.hf.space/webhook/smart-linkedin-agent';
+const N8N_REFINE_URL = 'https://aionesolution-n8n.hf.space/webhook/linkedin-content-automation-interact-v2';
 
 // Mock data for trending topics
 const getMockDataForNiche = (niche?: string): TrendingTopic[] => {
-    const baseTopics = [
-        { id: '1', title: 'The Future of Remote Work in 2025', posts: 'via Forbes', difficulty: 'Med' as const, link: 'https://www.forbes.com' },
-        { id: '2', title: 'AI Revolutionizing Healthcare Systems', posts: 'via TechCrunch', difficulty: 'High' as const, link: 'https://techcrunch.com' },
-        { id: '3', title: 'Sustainable Business Practices Gain Momentum', posts: 'via Bloomberg', difficulty: 'Med' as const, link: 'https://www.bloomberg.com' },
-        { id: '4', title: 'Cybersecurity Threats in Modern Enterprises', posts: 'via Wired', difficulty: 'High' as const, link: 'https://www.wired.com' },
-        { id: '5', title: 'The Rise of No-Code Development Platforms', posts: 'via VentureBeat', difficulty: 'Low' as const, link: 'https://venturebeat.com' },
-        { id: '6', title: 'Marketing Automation Trends for 2025', posts: 'via HubSpot', difficulty: 'Low' as const, link: 'https://www.hubspot.com' },
-        { id: '7', title: 'Financial Technology Breaking Traditional Banking', posts: 'via WSJ', difficulty: 'High' as const, link: 'https://www.wsj.com' },
-        { id: '8', title: 'Leadership Strategies for Hybrid Teams', posts: 'via HBR', difficulty: 'Med' as const, link: 'https://hbr.org' },
-        { id: '9', title: 'E-commerce Personalization Through AI', posts: 'via Shopify', difficulty: 'Low' as const, link: 'https://www.shopify.com' },
-        { id: '10', title: 'Data Privacy Regulations Impact on Business', posts: 'via MIT Tech Review', difficulty: 'High' as const, link: 'https://www.technologyreview.com' },
-        { id: '11', title: 'Cloud Computing Cost Optimization Strategies', posts: 'via AWS', difficulty: 'Med' as const, link: 'https://aws.amazon.com' },
-        { id: '12', title: 'Mental Health in the Workplace', posts: 'via Psychology Today', difficulty: 'Low' as const, link: 'https://www.psychologytoday.com' },
-        { id: '13', title: 'Blockchain Applications Beyond Cryptocurrency', posts: 'via CoinDesk', difficulty: 'High' as const, link: 'https://www.coindesk.com' },
-        { id: '14', title: 'Customer Success Metrics That Matter', posts: 'via Gainsight', difficulty: 'Low' as const, link: 'https://www.gainsight.com' },
-        { id: '15', title: 'Product Management Best Practices', posts: 'via ProductBoard', difficulty: 'Med' as const, link: 'https://www.productboard.com' },
-        { id: '16', title: 'UX Design Trends Shaping Digital Products', posts: 'via Smashing Magazine', difficulty: 'Low' as const, link: 'https://www.smashingmagazine.com' },
-        { id: '17', title: 'Sales Enablement Through Technology', posts: 'via Salesforce', difficulty: 'Med' as const, link: 'https://www.salesforce.com' },
-        { id: '18', title: 'HR Technology Transforming Recruitment', posts: 'via SHRM', difficulty: 'Med' as const, link: 'https://www.shrm.org' },
-        { id: '19', title: 'Real Estate Tech Disrupting Property Markets', posts: 'via Inman', difficulty: 'High' as const, link: 'https://www.inman.com' },
-        { id: '20', title: 'Educational Technology Innovations', posts: 'via EdSurge', difficulty: 'Low' as const, link: 'https://www.edsurge.com' },
+    const baseTopics: TrendingTopic[] = [
+        {
+            id: '1',
+            title: 'The Future of Remote Work in 2025',
+            source_name: 'Forbes',
+            volume: '12.5K posts',
+            difficulty: 'Med',
+            link: 'https://www.forbes.com',
+            snippet: 'Remote work is evolving into a hybrid model that prioritizes flexibility and digital collaboration tools.',
+            published_date: 'Dec 12, 2025',
+            thumbnail_url: 'https://images.unsplash.com/photo-1593642632823-8f785667914d?auto=format&fit=crop&q=80&w=1000'
+        },
+        {
+            id: '2',
+            title: 'AI Revolutionizing Healthcare Systems',
+            source_name: 'TechCrunch',
+            volume: '45K posts',
+            difficulty: 'High',
+            link: 'https://techcrunch.com',
+            snippet: 'Artificial intelligence is diagnosing diseases faster and more accurately than ever before.',
+            published_date: 'Dec 11, 2025',
+            thumbnail_url: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&q=80&w=1000'
+        },
+        {
+            id: '3',
+            title: 'Sustainable Business Practices Gain Momentum',
+            source_name: 'Bloomberg',
+            volume: '8.2K posts',
+            difficulty: 'Med',
+            link: 'https://www.bloomberg.com',
+            snippet: 'Companies are increasingly adopting green policies to attract eco-conscious consumers and investors.',
+            published_date: 'Dec 10, 2025',
+            thumbnail_url: 'https://images.unsplash.com/photo-1542601906990-b4d3fb7d5afa?auto=format&fit=crop&q=80&w=1000'
+        },
+        {
+            id: '4',
+            title: 'Cybersecurity Threats in Modern Enterprises',
+            source_name: 'Wired',
+            volume: '22K posts',
+            difficulty: 'High',
+            link: 'https://www.wired.com',
+            snippet: 'As digital transformation accelerates, so do the sophistication and frequency of cyber attacks.',
+            published_date: 'Dec 09, 2025',
+            thumbnail_url: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=1000'
+        },
+        {
+            id: '5',
+            title: 'The Rise of No-Code Development Platforms',
+            source_name: 'VentureBeat',
+            volume: '15K posts',
+            difficulty: 'Low',
+            link: 'https://venturebeat.com',
+            snippet: 'No-code tools are democratizing software creation, allowing non-engineers to build powerful apps.',
+            published_date: 'Dec 08, 2025',
+            thumbnail_url: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&q=80&w=1000'
+        }
     ];
 
     if (niche) {
@@ -71,8 +131,33 @@ export const api = {
             const result = await response.json();
 
             // Check if response has data
-            if (result.data && Array.isArray(result.data) && result.data.length > 0) {
-                return result.data;
+            if (result.success && Array.isArray(result.data) && result.data.length > 0) {
+                // Map response to TrendingTopic and add mock values for visual richness
+                return result.data.map((item: any) => ({
+                    id: item.id || Math.random().toString(36).substr(2, 9),
+                    title: item.title,
+                    snippet: item.snippet !== 'No summary available.' ? item.snippet : undefined,
+                    source_name: item.source_name,
+                    link: item.link,
+                    published_date: item.published_date,
+                    thumbnail_url: item.thumbnail_url,
+                    // Mock data for UI polish
+                    volume: `${Math.floor(Math.random() * 50 + 10)}K posts`,
+                    difficulty: ['Low', 'Med', 'High'][Math.floor(Math.random() * 3)] as 'Low' | 'Med' | 'High'
+                }));
+            } else if (result.data && Array.isArray(result.data) && result.data.length > 0) {
+                // Fallback for direct array
+                return result.data.map((item: any) => ({
+                    id: item.id || Math.random().toString(36).substr(2, 9),
+                    title: item.title,
+                    snippet: item.snippet,
+                    source_name: item.source_name,
+                    link: item.link,
+                    published_date: item.published_date,
+                    thumbnail_url: item.thumbnail_url,
+                    volume: `${Math.floor(Math.random() * 50 + 10)}K posts`,
+                    difficulty: ['Low', 'Med', 'High'][Math.floor(Math.random() * 3)] as 'Low' | 'Med' | 'High'
+                }));
             }
 
             // Fallback to mock data if no results
@@ -87,18 +172,14 @@ export const api = {
     },
 
     // Generate drafts via N8N Webhook
-    generateDrafts: async (topic: string): Promise<PostDraft[]> => {
+    generateDrafts: async (topic: string): Promise<GenerateResponse> => {
         try {
-            const url = new URL(N8N_GENERATE_URL);
-            url.searchParams.append('keyword', topic);
-            url.searchParams.append('tone', 'Professional');
-            url.searchParams.append('length', 'Medium');
-
-            const response = await fetch(url.toString(), {
-                method: 'GET',
+            const response = await fetch(N8N_GENERATE_URL, {
+                method: 'POST',
                 headers: {
-                    'Accept': 'application/json',
-                }
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ keyword: topic })
             });
 
             if (!response.ok) {
@@ -107,36 +188,24 @@ export const api = {
 
             const data = await response.json();
 
-            const deepDrafts = data?.payload?.output?.post_drafts;
-            if (Array.isArray(deepDrafts)) {
-                return deepDrafts.map((item: any) => ({
-                    id: Math.random().toString(36).substr(2, 9),
-                    title: item.title,
-                    content: item.content,
-                    hashtags: item.hashtags || []
-                }));
+            // Parse schema - handle nested output
+            const posts = data.output?.posts || data.posts;
+            const analysis = data.output?.analysis || data.analysis;
+
+            if (posts && Array.isArray(posts)) {
+                return {
+                    drafts: posts.map((post: any) => ({
+                        id: Math.random().toString(36).substr(2, 9),
+                        title: post.type,
+                        content: `${post.hook}\n\n${post.body}`,
+                        hashtags: post.hashtags || []
+                    })),
+                    analysis
+                };
             }
 
-            if (Array.isArray(data)) {
-                return data.map((item: any) => ({
-                    id: Math.random().toString(36).substr(2, 9),
-                    title: item.title,
-                    content: item.content,
-                    hashtags: item.hashtags || []
-                }));
-            }
-
-            if (data.output && Array.isArray(data.output)) {
-                return data.output.map((item: any) => ({
-                    id: Math.random().toString(36).substr(2, 9),
-                    title: item.title,
-                    content: item.content,
-                    hashtags: item.hashtags || []
-                }));
-            }
-
-            console.warn("Unexpected API response structure:", data);
-            return [];
+            console.warn("Unexpected API response:", data);
+            return { drafts: [] };
 
         } catch (error) {
             console.error("API Error:", error);
@@ -145,7 +214,7 @@ export const api = {
     },
 
     // Update post via N8N Webhook
-    updatePost: async (currentContent: string, instruction: string): Promise<string> => {
+    updatePost: async (currentContent: string, instruction: string, chatHistory: ChatMessage[] = []): Promise<UpdatePostResponse> => {
         try {
             const response = await fetch(N8N_REFINE_URL, {
                 method: 'POST',
@@ -154,7 +223,8 @@ export const api = {
                 },
                 body: JSON.stringify({
                     prompt: instruction,
-                    post: currentContent
+                    post: currentContent,
+                    chat_history: chatHistory
                 })
             });
 
@@ -163,25 +233,25 @@ export const api = {
             }
 
             const data = await response.json();
-            let outputData = data?.payload?.output;
 
-            if (typeof outputData === 'string') {
-                try {
-                    outputData = JSON.parse(outputData);
-                } catch (e) {
-                    console.error("Failed to parse inner JSON", e);
-                }
+            // Handle array response [ { ok: true, final_post: { output: { ... } } } ]
+            let output: any;
+
+            if (Array.isArray(data) && data.length > 0) {
+                output = data[0]?.final_post?.output;
+            } else if (data?.final_post?.output) {
+                // Handle object response { ok: true, final_post: { output: { ... } } }
+                output = data.final_post.output;
             }
 
-            if (outputData?.post_drafts && Array.isArray(outputData.post_drafts) && outputData.post_drafts.length > 0) {
-                return outputData.post_drafts[0].content;
+            if (output) {
+                const content = output.content || '';
+                const summary_message = output.summary_message;
+                return { content, summary_message };
             }
 
-            if (typeof outputData === 'string') {
-                return outputData;
-            }
-
-            console.warn("Invalid response format from update API:", data);
+            // Fallback for previous schema or error
+            console.warn("Unexpected API response format:", data);
             throw new Error("Invalid response format from update API");
 
         } catch (error) {

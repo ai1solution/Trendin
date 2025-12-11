@@ -1,13 +1,10 @@
 import { create } from 'zustand';
-import { api, type PostDraft } from '../lib/api';
+import { api, type PostDraft, type Analysis, type ChatMessage } from '../lib/api';
 import { trackEvent } from '../lib/posthog';
 
 export type AppMode = 'landing' | 'trending' | 'generating' | 'selection' | 'editor';
 
-interface ChatMessage {
-    role: 'user' | 'assistant';
-    content: string;
-}
+// ChatMessage is now imported from api.ts
 
 interface AppState {
     mode: AppMode;
@@ -17,6 +14,7 @@ interface AppState {
     isGenerating: boolean;
     isUpdating: boolean;
     chatMessages: ChatMessage[];
+    analysis: Analysis | null;
 
     // Actions
     setMode: (mode: AppMode) => void;
@@ -37,6 +35,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     isGenerating: false,
     isUpdating: false,
     chatMessages: [],
+    analysis: null,
 
     setMode: (mode) => set({ mode }),
     setTopic: (topic) => set({ topic }),
@@ -44,7 +43,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     generateDrafts: async (topic) => {
         set({ isGenerating: true, mode: 'generating', topic });
         try {
-            const drafts = await api.generateDrafts(topic);
+            const { drafts, analysis } = await api.generateDrafts(topic);
 
             // Track draft generation
             trackEvent({
@@ -56,7 +55,7 @@ export const useAppStore = create<AppState>((set, get) => ({
                 }
             });
 
-            set({ drafts, isGenerating: false, mode: 'selection' });
+            set({ drafts, analysis: analysis || null, isGenerating: false, mode: 'selection' });
         } catch (error) {
             console.error("Failed to generate drafts", error);
             set({ isGenerating: false });
@@ -76,14 +75,18 @@ export const useAppStore = create<AppState>((set, get) => ({
         // Append hashtags to content if available and NOT already present
         let finalContent = draft.content;
         if (draft.hashtags && draft.hashtags.length > 0) {
-            // Check if the first hashtag is already present to avoid duplication
-            // Handle hashtags that might already have the # prefix from API
-            const formattedHashtags = draft.hashtags.map(tag => tag.startsWith('#') ? tag : `#${tag}`);
-            const firstHashtag = formattedHashtags[0];
+            // Filter out undefined/null/empty hashtags and format them
+            const formattedHashtags = draft.hashtags
+                .filter(tag => tag && typeof tag === 'string' && tag.trim() !== '')
+                .map(tag => tag.startsWith('#') ? tag : `#${tag}`);
 
-            if (!finalContent.includes(firstHashtag)) {
-                const hashtagString = formattedHashtags.join(' ');
-                finalContent = `${draft.content}\n\n${hashtagString}`;
+            if (formattedHashtags.length > 0) {
+                const firstHashtag = formattedHashtags[0];
+
+                if (!finalContent.includes(firstHashtag)) {
+                    const hashtagString = formattedHashtags.join(' ');
+                    finalContent = `${finalContent}\n\n${hashtagString}`;
+                }
             }
         }
 
@@ -140,36 +143,44 @@ export const useAppStore = create<AppState>((set, get) => ({
         set({ chatMessages: newMessages, isUpdating: true });
 
         try {
-            // Call API update
-            let updatedContent = await api.updatePost(selectedDraft.content, message);
+            // Call API update with chat history
+            // We now get an object: { content: string, summary_message?: string }
+            const result = await api.updatePost(selectedDraft.content, message, chatMessages);
+            let updatedContentString = result.content;
+            const apiSummary = result.summary_message;
 
             // Re-append hashtags if they were lost during refinement
             if (selectedDraft.hashtags && selectedDraft.hashtags.length > 0) {
                 const formattedHashtags = selectedDraft.hashtags.map(tag => tag.startsWith('#') ? tag : `#${tag}`);
                 const firstHashtag = formattedHashtags[0];
 
-                if (!updatedContent.includes(firstHashtag)) {
+                if (!updatedContentString.includes(firstHashtag)) {
                     const hashtagString = formattedHashtags.join(' ');
-                    updatedContent = `${updatedContent}\n\n${hashtagString}`;
+                    updatedContentString = `${updatedContentString}\n\n${hashtagString}`;
                 }
             }
 
-            // Randomized AI responses for variety
-            const responses = [
-                "I've updated the post based on your request.",
-                "Great! I've made those changes to your post.",
-                "Done! Your post has been refined.",
-                "Perfect! I've applied your suggestions.",
-                "Updated! Check out the new version.",
-                "All set! I've enhanced your post as requested.",
-            ];
-            const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+            // Determine assistant response
+            let finalAssistantMessage = apiSummary; // Use API summary if available
+
+            if (!finalAssistantMessage || finalAssistantMessage.trim() === '') {
+                // Fallback to randomized AI responses for variety if no summary
+                const responses = [
+                    "I've updated the post based on your request.",
+                    "Great! I've made those changes to your post.",
+                    "Done! Your post has been refined.",
+                    "Perfect! I've applied your suggestions.",
+                    "Updated! Check out the new version.",
+                    "All set! I've enhanced your post as requested.",
+                ];
+                finalAssistantMessage = responses[Math.floor(Math.random() * responses.length)];
+            }
 
             // Update post content
             set((state) => ({
-                selectedDraft: state.selectedDraft ? { ...state.selectedDraft, content: updatedContent } : null,
+                selectedDraft: state.selectedDraft ? { ...state.selectedDraft, content: updatedContentString } : null,
                 isUpdating: false,
-                chatMessages: [...newMessages, { role: 'assistant', content: randomResponse }]
+                chatMessages: [...newMessages, { role: 'assistant', content: finalAssistantMessage as string }]
             }));
         } catch (error) {
             console.error("Failed to update post", error);

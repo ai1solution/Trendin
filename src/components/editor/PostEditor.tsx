@@ -2,13 +2,28 @@ import { Copy, Check, Linkedin, Pen, Hash, Type } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import React from 'react';
 import { trackEvent } from '../../lib/posthog';
+import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../lib/utils'; // Ensure cn is available
 
 export const PostEditor = () => {
-    const { selectedDraft, updatePostContent } = useAppStore();
+    const { selectedDraft, updatePostContent, isUpdating } = useAppStore();
     const [copied, setCopied] = React.useState(false);
     const [linkedinCopied, setLinkedinCopied] = React.useState(false);
     const textareaRef = React.useRef<HTMLTextAreaElement>(null);
+
+    // Transition effect state
+    const [showUpdateEffect, setShowUpdateEffect] = React.useState(false);
+    const prevIsUpdating = React.useRef(isUpdating);
+
+    React.useEffect(() => {
+        // Trigger effect when AI finishes updating (isUpdating goes from true -> false)
+        if (prevIsUpdating.current && !isUpdating) {
+            setShowUpdateEffect(true);
+            const timer = setTimeout(() => setShowUpdateEffect(false), 2000);
+            return () => clearTimeout(timer);
+        }
+        prevIsUpdating.current = isUpdating;
+    }, [isUpdating]);
 
     // Copy to clipboard
     const handleCopy = () => {
@@ -118,19 +133,54 @@ export const PostEditor = () => {
             </div>
 
             {/* Editor Surface */}
-            <div className="flex-1 overflow-y-auto custom-scrollbar p-6 lg:p-8">
-                <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-sm border border-gray-100 min-h-[500px] flex flex-col relative group transition-shadow duration-300 hover:shadow-md">
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-6 lg:p-8 relative">
+                <AnimatePresence>
+                    {showUpdateEffect && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="absolute inset-0 z-0 bg-gradient-to-r from-purple-100/50 via-linkedin-100/50 to-blue-100/50 pointer-events-none"
+                        />
+                    )}
+                </AnimatePresence>
+
+                <motion.div
+                    animate={showUpdateEffect ? {
+                        boxShadow: "0 0 0 2px rgba(10, 102, 194, 0.4), 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)",
+                        borderColor: "rgba(10, 102, 194, 0.4)"
+                    } : {}}
+                    className="max-w-3xl mx-auto bg-white rounded-xl shadow-sm border border-gray-100 min-h-[500px] flex flex-col relative group transition-all duration-500 z-10"
+                >
+                    {/* Magic Sparkle Icon for Effect */}
+                    <AnimatePresence>
+                        {showUpdateEffect && (
+                            <motion.div
+                                initial={{ scale: 0, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                exit={{ scale: 0, opacity: 0 }}
+                                className="absolute -top-3 -right-3 z-20 bg-gradient-to-br from-purple-600 to-linkedin-600 text-white p-2 rounded-full shadow-lg"
+                            >
+                                <motion.div
+                                    animate={{ rotate: 360 }}
+                                    transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                                >
+                                    <Pen className="w-5 h-5" />
+                                </motion.div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+
                     <textarea
                         ref={textareaRef}
                         value={selectedDraft.content}
                         onChange={(e) => updatePostContent(e.target.value)}
-                        className="flex-1 w-full p-8 text-lg leading-relaxed resize-none outline-none text-gray-800 font-sans placeholder:text-gray-300 bg-transparent"
+                        className="flex-1 w-full p-8 text-lg leading-relaxed resize-none outline-none text-gray-800 font-sans placeholder:text-gray-300 bg-transparent relative z-10"
                         placeholder="Start writing your viral post..."
                         spellCheck={false}
                     />
+                </motion.div>
 
-                    {/* Bottom fade for extensive scrolling hints if needed, or just cleaner styling */}
-                </div>
                 <p className="text-center text-xs text-gray-400 mt-4">Pro tip: Use short paragraphs for better readability on mobile.</p>
             </div>
 

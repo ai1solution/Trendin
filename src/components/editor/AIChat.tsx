@@ -1,5 +1,5 @@
 import React from 'react';
-import { Send, Bot, User, Sparkles, Zap, Code2, Wand2, Copy, Check } from 'lucide-react';
+import { Send, Bot, User, Sparkles, Zap, Code2, Copy, Check } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { cn } from '../../lib/utils';
 import ReactMarkdown from 'react-markdown';
@@ -8,7 +8,34 @@ export const AIChat = () => {
     const { chatMessages, sendChatMessage, isUpdating } = useAppStore();
     const [input, setInput] = React.useState('');
     const [copiedIndex, setCopiedIndex] = React.useState<number | null>(null);
+    const [loadingMessage, setLoadingMessage] = React.useState('Thinking');
     const scrollRef = React.useRef<HTMLDivElement>(null);
+
+    const LOADING_MESSAGES = [
+        "Thinking...",
+        "Analyzing trends...",
+        "Brewing ideas...",
+        "Crafting magic...",
+        "Consulting the muse...",
+        "Connecting dots...",
+        "Polishing words...",
+        "Optimizing impact...",
+        "Checking viral factors...",
+        "Adding sparkles..."
+    ];
+
+    React.useEffect(() => {
+        let interval: ReturnType<typeof setInterval>;
+        if (isUpdating) {
+            setLoadingMessage(LOADING_MESSAGES[0]);
+            let i = 0;
+            interval = setInterval(() => {
+                i = (i + 1) % LOADING_MESSAGES.length;
+                setLoadingMessage(LOADING_MESSAGES[i]);
+            }, 2000);
+        }
+        return () => clearInterval(interval);
+    }, [isUpdating]);
 
     React.useEffect(() => {
         if (scrollRef.current) {
@@ -37,24 +64,33 @@ export const AIChat = () => {
     return (
         <div className="flex flex-col h-full bg-gradient-to-br from-[#f8f9fb] to-[#ffffff]">
             {/* Modern Header - Minimalist & Premium */}
-            <div className="px-6 py-4 border-b border-gray-100/80 bg-white/80 backdrop-blur-md sticky top-0 z-10">
+            <div className="px-6 py-4 border-b border-gray-100/80 bg-white/80 backdrop-blur-md sticky top-0 z-10 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                     <div className="relative group">
                         <div className="absolute -inset-1 bg-gradient-to-r from-purple-400 to-linkedin-400 rounded-xl blur opacity-20 group-hover:opacity-40 transition duration-500" />
                         <div className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-white border border-gray-100 shadow-sm text-linkedin-600">
-                            <Wand2 className="w-5 h-5" />
+                            <Sparkles className="w-5 h-5" />
                         </div>
                     </div>
                     <div>
-                        <h3 className="text-sm font-bold font-display text-gray-800">AI Companion</h3>
+                        <h3 className="text-sm font-bold font-display text-gray-800 flex items-center gap-2">
+                            Trendin AI
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-gradient-to-r from-purple-500 to-linkedin-500 text-white">PRO</span>
+                        </h3>
                         <div className="flex items-center gap-1.5">
                             <span className="relative flex w-2 h-2">
                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                                 <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
                             </span>
-                            <span className="text-xs font-medium text-gray-500">Online & Ready</span>
+                            <span className="text-xs font-medium text-gray-500">Active & Learning</span>
                         </div>
                     </div>
+                </div>
+                {/* Visual Flair */}
+                <div className="hidden md:flex items-center gap-1 opacity-20">
+                    {[1, 2, 3].map(i => (
+                        <div key={i} className="w-1 h-3 bg-gray-900 rounded-full animate-pulse" style={{ animationDelay: `${i * 0.15}s` }} />
+                    ))}
                 </div>
             </div>
 
@@ -104,11 +140,14 @@ export const AIChat = () => {
 
                         {/* Content */}
                         <div className={cn(
-                            "relative max-w-[85%] rounded-2xl px-5 py-3.5 shadow-sm text-sm leading-relaxed",
+                            "relative max-w-[85%] rounded-2xl px-5 py-3.5 text-sm leading-relaxed",
                             msg.role === 'user'
-                                ? "bg-linkedin-600 text-white rounded-tr-sm"
-                                : "bg-white border border-gray-100 text-gray-700 rounded-tl-sm"
+                                ? "bg-linkedin-600 text-white rounded-tr-sm shadow-md"
+                                : "bg-gradient-to-br from-white to-gray-50 border border-gray-100 text-gray-700 rounded-tl-sm shadow-md hover:shadow-lg transition-shadow duration-300"
                         )}>
+                            {msg.role === 'assistant' && (
+                                <div className="absolute -left-1 top-1/2 -translate-y-1/2 w-1 h-8 bg-gradient-to-b from-purple-500 to-linkedin-500 rounded-full opacity-60" />
+                            )}
                             {msg.role === 'assistant' ? (
                                 <div className="prose prose-sm max-w-none prose-p:my-1 prose-headings:my-2 prose-ul:my-1 prose-li:my-0.5 text-gray-700">
                                     <ReactMarkdown
@@ -162,11 +201,13 @@ export const AIChat = () => {
                             <Bot className="w-4 h-4" />
                         </div>
                         <div className="px-5 py-4 bg-white border border-gray-100 shadow-sm rounded-2xl rounded-tl-sm">
-                            <div className="flex gap-1.5 items-center">
-                                <span className="text-xs font-medium text-gray-400 mr-2">Thinking</span>
-                                <span className="w-1.5 h-1.5 bg-linkedin-400 rounded-full animate-bounce [animation-delay:-0.3s]" />
-                                <span className="w-1.5 h-1.5 bg-linkedin-400 rounded-full animate-bounce [animation-delay:-0.15s]" />
-                                <span className="w-1.5 h-1.5 bg-linkedin-400 rounded-full animate-bounce" />
+                            <div className="flex gap-2 items-center">
+                                <span className="text-xs font-medium text-gray-500 min-w-[100px]">{loadingMessage}</span>
+                                <div className="flex gap-1">
+                                    <span className="w-1.5 h-1.5 bg-linkedin-400 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                                    <span className="w-1.5 h-1.5 bg-linkedin-400 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                                    <span className="w-1.5 h-1.5 bg-linkedin-400 rounded-full animate-bounce" />
+                                </div>
                             </div>
                         </div>
                     </div>
