@@ -73,8 +73,22 @@ export const useAppStore = create<AppState>((set, get) => ({
             }
         });
 
+        // Append hashtags to content if available and NOT already present
+        let finalContent = draft.content;
+        if (draft.hashtags && draft.hashtags.length > 0) {
+            // Check if the first hashtag is already present to avoid duplication
+            // Handle hashtags that might already have the # prefix from API
+            const formattedHashtags = draft.hashtags.map(tag => tag.startsWith('#') ? tag : `#${tag}`);
+            const firstHashtag = formattedHashtags[0];
+
+            if (!finalContent.includes(firstHashtag)) {
+                const hashtagString = formattedHashtags.join(' ');
+                finalContent = `${draft.content}\n\n${hashtagString}`;
+            }
+        }
+
         set({
-            selectedDraft: draft,
+            selectedDraft: { ...draft, content: finalContent },
             mode: 'editor',
             chatMessages: [{ role: 'assistant', content: "I'm ready to help you refine this post. What would you like to change?" }]
         });
@@ -127,7 +141,18 @@ export const useAppStore = create<AppState>((set, get) => ({
 
         try {
             // Call API update
-            const updatedContent = await api.updatePost(selectedDraft.content, message);
+            let updatedContent = await api.updatePost(selectedDraft.content, message);
+
+            // Re-append hashtags if they were lost during refinement
+            if (selectedDraft.hashtags && selectedDraft.hashtags.length > 0) {
+                const formattedHashtags = selectedDraft.hashtags.map(tag => tag.startsWith('#') ? tag : `#${tag}`);
+                const firstHashtag = formattedHashtags[0];
+
+                if (!updatedContent.includes(firstHashtag)) {
+                    const hashtagString = formattedHashtags.join(' ');
+                    updatedContent = `${updatedContent}\n\n${hashtagString}`;
+                }
+            }
 
             // Randomized AI responses for variety
             const responses = [
