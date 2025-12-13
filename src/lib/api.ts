@@ -38,8 +38,8 @@ export interface TrendingTopic {
     difficulty?: 'Low' | 'Med' | 'High';
 }
 
-const N8N_GENERATE_URL = 'https://aionesolution-n8n.hf.space/webhook/smart-linkedin-agent';
-const N8N_REFINE_URL = 'https://aionesolution-n8n.hf.space/webhook/linkedin-content-automation-interact-v2';
+const N8N_GENERATE_URL = 'https://aionesolution-trendin.hf.space/webhook/smart-linkedin-agent';
+const N8N_REFINE_URL = 'https://aionesolution-trendin.hf.space/webhook/linkedin-content-automation-interact-v2';
 
 // Mock data for trending topics
 const getMockDataForNiche = (niche?: string): TrendingTopic[] => {
@@ -115,7 +115,7 @@ export const api = {
     // Fetch trending topics via n8n webhook
     getTrends: async (niche?: string): Promise<TrendingTopic[]> => {
         try {
-            const n8nUrl = 'https://aionesolution-n8n.hf.space/webhook/trendin-trends';
+            const n8nUrl = 'https://aionesolution-trendin.hf.space/webhook/trendin-trends';
             const url = new URL(n8nUrl);
 
             if (niche) {
